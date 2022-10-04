@@ -16,13 +16,12 @@ import (
 
 const ApiEndpoint = "https://0x0.st"
 
-//goland:noinspection ALL
 func main() {
 	rFile := "wl-paste" + randomString(15)
 	f, _ := os.CreateTemp(os.TempDir(), rFile)
 
-	defer os.Remove(f.Name())
 	defer f.Close()
+	defer os.Remove(f.Name())
 
 	cmd := exec.Command("wl-paste")
 	out, _ := cmd.Output()
@@ -31,12 +30,16 @@ func main() {
 	f, _ = os.Open(f.Name())
 	file, err := UploadFile(f)
 	if err != nil {
-		println(err.Error())
+		os.Stderr.WriteString(err.Error())
 		return
 	}
 
-	exec.Command("wl-copy", file).Run()
-	println(file)
+	if err = exec.Command("wl-copy", file).Run(); err != nil {
+		os.Stderr.WriteString(err.Error())
+		return
+	}
+
+	os.Stdout.WriteString(file)
 }
 
 // UploadFile takes a file and uploads that file to a file host.
