@@ -4,47 +4,39 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 )
 
 const ApiEndpoint = "https://0x0.st"
 
 func main() {
-	rFile := "wl-paste" + randomString(15)
-	f, _ := os.CreateTemp(os.TempDir(), rFile)
-
-	defer f.Close()
-	defer os.Remove(f.Name())
-
 	cmd := exec.Command("wl-paste")
 	out, _ := cmd.Output()
-	_, _ = f.Write(out)
 
-	f, _ = os.Open(f.Name())
-	file, err := UploadFile(f)
+	b := bytes.NewBuffer([]byte(""))
+	if _, err := b.Write(out); err != nil {
+		notify(err.Error(), true)
+	}
+
+	file, err := Upload(b)
 	if err != nil {
-		os.Stderr.WriteString(err.Error())
-		return
+		notify(err.Error(), true)
 	}
 
 	if err = exec.Command("wl-copy", file).Run(); err != nil {
-		os.Stderr.WriteString(err.Error())
-		return
+		notify(err.Error(), true)
 	}
 
-	os.Stdout.WriteString(file)
+	notify("Clipboard uploaded\n"+file, true)
 }
 
-// UploadFile takes a file and uploads that file to a file host.
+// Upload takes a file and uploads that file to a file host.
 // It returns the url to the uploaded file as a string and any error encountered.
-func UploadFile(file *os.File) (string, error) {
+func Upload(file *bytes.Buffer) (string, error) {
 	var err error
 	var result string
 
@@ -56,35 +48,24 @@ func UploadFile(file *os.File) (string, error) {
 }
 
 //goland:noinspection ALL
-func UploadToHost(url string, file *os.File) (string, error) {
-	var err error
+func UploadToHost(url string, file *bytes.Buffer) (string, error) {
+	var (
+		err    error
+		client http.Client
+	)
 
-	values := map[string]io.Reader{
-		"file": file,
+	writer := multipart.NewWriter(file)
+
+	form, err := writer.CreateFormFile("file", "file")
+	if err != nil {
+		return "", err
 	}
 
-	var client http.Client
-	var b bytes.Buffer
-	writer := multipart.NewWriter(&b)
-	for key, r := range values {
-		var fw io.Writer
-		if x, ok := r.(io.Closer); ok {
-			defer x.Close()
-		}
-		// Add an image file
-		if x, ok := r.(*os.File); ok {
-			if fw, err = writer.CreateFormFile(key, x.Name()); err != nil {
-				return "", err
-			}
-		}
-		if _, err = io.Copy(fw, r); err != nil {
-			return "", err
-		}
+	form.Write(file.Bytes())
 
-	}
 	writer.Close()
 
-	req, err := http.NewRequest("POST", url, &b)
+	req, err := http.NewRequest("POST", url, file)
 	if err != nil {
 		return "", err
 	}
@@ -100,16 +81,19 @@ func UploadToHost(url string, file *os.File) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body)
 		bodyString := string(bodyBytes)
+
 		return strings.Replace(bodyString, "\n", "", -1), nil
 	}
+
 	return "", fmt.Errorf("bad status: %s", resp.Status)
 }
 
-func randomString(length int) string {
-	rand.Seed(time.Now().UnixNano())
-	b := make([]byte, length)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)[:length]
+func notify(msg string, exit bool) {
+	_ = exec.Command("notify-send", "wl-uploader", msg).Run()
+
+	if exit {
+		os.Exit(1)
+	}
 }

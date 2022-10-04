@@ -1,24 +1,31 @@
-.DEFAULT: run
+PROJ_NAME = wl-uploader
 
-PACKAGE_NAME = wl-uploader
-
-MAIN_PATH = main.go
+MAIN_PATH = *.go
 BUILD_PATH = build/package/
-INSTALL_DIR = /usr/local/bin/
 
-export CGO_ENABLED = 0
+INSTALL_PATH = /usr/bin/
 
-run:
-	@go run $(MAIN_PATH)
-
-build-release:
-	@go build -ldflags "-w" -a -v -o $(BUILD_PATH)$(PACKAGE_NAME) $(MAIN_PATH)
-
-build-dev:
-	@go build -v -o $(BUILD_PATH)$(PACKAGE_NAME) $(MAIN_PATH)
-
-install: build-release
-	sudo cp $(BUILD_PATH)$(PACKAGE_NAME) $(INSTALL_DIR)$(PACKAGE_NAME)
+install:
+	make build-default
+	sudo cp $(BUILD_PATH)$(PROJ_NAME) $(INSTALL_PATH)$(PROJ_NAME)
 
 uninstall:
-	sudo rm $(INSTALL_DIR)$(PACKAGE_NAME)
+	sudo rm $(INSTALL_PATH)$(PROJ_NAME)
+
+build-default: clean
+	go build --ldflags '-extldflags "-static"' -v -o $(BUILD_PATH)$(PROJ_NAME) $(MAIN_PATH)
+
+build-arm: clean
+	GOOS=linux GOARCH=arm GOARM=7 make build-default
+
+build-static: clean
+	go build -ldflags "-w -linkmode external -extldflags "-static -v -o $(BUILD_PATH)$(PROJ_NAME) $(MAIN_PATH)
+
+build-debug: clean
+	go build -v -o $(BUILD_PATH)$(PROJ_NAME) $(MAIN_PATH)
+
+clean:
+	rm -rf $(BUILD_PATH)*
+
+tests:
+	go test -coverpkg=./... ./... -parallel=2
