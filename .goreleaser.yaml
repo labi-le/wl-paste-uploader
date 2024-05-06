@@ -1,21 +1,28 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
+project_name: wl-uploader
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
-    # you may remove this if you don't need go generate
     - go generate ./...
+archives:
+  - format: binary
 builds:
-  - env:
-      - CGO_ENABLED=0
+  - main: "."
+    mod_timestamp: '{{ .CommitTimestamp }}'
     goos:
       - linux
-archives:
-  - replacements:
-      linux: Linux
-      386: i386
-      amd64: x86_64
+      - darwin
+    goarch:
+      - amd64
+      - arm
+    tags:
+      - netgo
+      - osusergo
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -extldflags '-static'
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -26,3 +33,33 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+release:
+  name_template: 'v{{ .Version }}'
+  make_latest: true
+
+nfpms:
+  - vendor: labi-le
+
+    # Your app's homepage.
+    homepage: https://github.com/labi-le/wl-paste-uploader
+
+    # Your app's maintainer (probably you).
+    maintainer: labi-le <i@labile.cc>
+
+    # Your app's description.
+    description: |-
+      wl-paste share to 0x0.st
+
+    # Your app's license.
+    license: MIT
+
+    # Formats to be generated.
+    formats:
+      - deb
+      - rpm
+      - archlinux
+
+    dependencies:
+      - wl-clipboard
+    version_metadata: git
