@@ -8,18 +8,18 @@
 
   outputs = { self, nixpkgs, flake-utils }:
     let
-      version = "1.1.2";
+      version = "1.2.3";
       pname = "wl-uploader";
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
 
       systemConfigs = {
         x86_64-linux = {
           arch = "linux_amd64";
-          hash = "sha256-cU54wtts7UPKz2JoxABioU5xi5uc3IdxfoCmWp8bxPM="; # x86_64-linux
+          hash = "sha256-NWqRJm1zltg96sGQFfWG8AcPEnRvpmufcX1SFquLyM0="; # x86_64-linux
         };
         aarch64-linux = {
           arch = "linux_armv6";
-          hash = "sha256-eT9jZantyeZs5IhEMqPdGav9t0PgKNIX8GDH/3zAeeU="; # aarch64-linux
+          hash = "sha256-Z9tK175b06urWeBXH4IMZdDj82g9X3ucKLKe3yfhlP8="; # aarch64-linux
         };
       };
     in
