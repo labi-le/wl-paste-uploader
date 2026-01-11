@@ -81,6 +81,7 @@ func UploadToHost(endpointURL string, fileContent *bytes.Buffer) (string, error)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("User-Agent", "wl-uploader/1.0 (https://github.com/labi-le/wl-paste-uploader)")
 
 	resp, err := client.Do(req)
 	if err != nil {
