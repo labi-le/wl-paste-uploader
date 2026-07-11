@@ -6,11 +6,19 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
     let
       version = "1.2.3";
       pname = "wl-uploader";
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
 
       systemConfigs = {
         x86_64-linux = {
@@ -18,12 +26,13 @@
           hash = "sha256-NWqRJm1zltg96sGQFfWG8AcPEnRvpmufcX1SFquLyM0="; # x86_64-linux
         };
         aarch64-linux = {
-          arch = "linux_armv6";
+          arch = "linux_arm64";
           hash = "sha256-Z9tK175b06urWeBXH4IMZdDj82g9X3ucKLKe3yfhlP8="; # aarch64-linux
         };
       };
     in
-    flake-utils.lib.eachSystem supportedSystems (system:
+    flake-utils.lib.eachSystem supportedSystems (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         config = systemConfigs.${system};
@@ -49,9 +58,51 @@
             description = "wl-paste share to 0x0.st and copy result url to clipboard";
             homepage = "https://github.com/labi-le/wl-paste-uploader";
             license = licenses.mit;
+            mainProgram = pname;
             platforms = supportedSystems;
           };
         };
       }
-    );
+    )
+    // {
+      nixosModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+        let
+          cfg = config.programs.wl-paste-uploader;
+          defaultPackage = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        in
+        {
+          options.programs.wl-paste-uploader = with lib; {
+            enable = mkEnableOption "wl-paste-uploader (wl-paste share to 0x0.st)";
+
+            package = mkOption {
+              type = types.package;
+              default = defaultPackage;
+              description = "The wl-paste-uploader package to use";
+            };
+
+            ocr = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Install tesseract to enable OCR (the --ocr flag)";
+            };
+          };
+
+          # wl-uploader is a one-shot command bound to a keybind, not a daemon,
+          # so the module only wires up the binary and its runtime dependencies.
+          config = lib.mkIf cfg.enable {
+            environment.systemPackages = [
+              cfg.package
+              pkgs.wl-clipboard # wl-paste / wl-copy
+              pkgs.libnotify # notify-send
+            ]
+            ++ lib.optional cfg.ocr pkgs.tesseract;
+          };
+        };
+    };
 }

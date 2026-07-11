@@ -1,10 +1,11 @@
+version: 2
 project_name: wl-uploader
 before:
   hooks:
     - go mod tidy
     - go generate ./...
 archives:
-  - format: binary
+  - formats: [ binary ]
 builds:
   - main: "."
     mod_timestamp: '{{ .CommitTimestamp }}'
@@ -12,7 +13,7 @@ builds:
       - linux
     goarch:
       - amd64
-      - arm
+      - arm64
     tags:
       - netgo
       - osusergo
@@ -25,7 +26,7 @@ builds:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
   filters:
@@ -61,4 +62,7 @@ nfpms:
 
     dependencies:
       - wl-clipboard
+
+    recommends:
+      - tesseract
     version_metadata: git

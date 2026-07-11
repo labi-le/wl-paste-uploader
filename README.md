@@ -35,6 +35,27 @@ wl-paste share to 0x0.st and copy result url to clipboard
   }
   ```
   </details>
+  <details>
+  <summary>nixos module</summary>
+
+  ```nix
+  {
+    # inputs
+    wl-uploader.url = "github:labi-le/wl-paste-uploader";
+
+    # outputs
+    modules = [
+      wl-uploader.nixosModules.default
+      {
+        programs.wl-paste-uploader = {
+          enable = true;
+          ocr = true; # optional: pull in tesseract for `--ocr`
+        };
+      }
+    ];
+  }
+  ```
+  </details>
 
 ### usage:
 
