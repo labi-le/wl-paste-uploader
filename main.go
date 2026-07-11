@@ -42,6 +42,7 @@ func main() {
 		}
 
 		notify("Text recognized\n"+text, true)
+		return
 	}
 
 	file, err := Upload(clipboard)
