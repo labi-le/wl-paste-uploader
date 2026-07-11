@@ -55,3 +55,26 @@ socks_proxy=socks5://127.0.0.1:1088 wl-uploader
 ```
 
 you can also use env `HTTPS_PROXY`, `HTTP_PROXY`, `SOCKS_PROXY`, `ALL_PROXY`
+
+### OCR
+
+With `--ocr` the text is recognized from the clipboard image and copied to the
+clipboard instead of being uploaded:
+
+```sh
+wl-uploader --ocr
+```
+
+Requires [`tesseract`](https://github.com/tesseract-ocr/tesseract) in `PATH`.
+Pick the recognition language(s) with `OCR_LANG` (defaults to tesseract's own
+default, usually `eng`):
+
+```sh
+OCR_LANG=eng+rus wl-uploader --ocr
+```
+
+example for sway
+
+```conf
+bindsym --to-code Mod4+o exec wl-uploader --ocr
+```

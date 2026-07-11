@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -21,20 +23,33 @@ const (
 )
 
 func main() {
+	ocr := flag.Bool("ocr", false, "recognize text from the clipboard image via OCR and copy it to the clipboard instead of uploading")
+	flag.Parse()
+
 	cmd := exec.Command("wl-paste")
 	out, _ := cmd.Output()
 
-	b := bytes.NewBuffer([]byte(""))
-	if _, err := b.Write(out); err != nil {
-		notify(err.Error(), true)
+	clipboard := bytes.NewBuffer(out)
+
+	if *ocr {
+		text, err := Recognize(clipboard)
+		if err != nil {
+			notify(err.Error(), true)
+		}
+
+		if err := clipboardCopy(text); err != nil {
+			notify(err.Error(), true)
+		}
+
+		notify("Text recognized\n"+text, true)
 	}
 
-	file, err := Upload(b)
+	file, err := Upload(clipboard)
 	if err != nil {
 		notify(err.Error(), true)
 	}
 
-	if err = exec.Command("wl-copy", file).Run(); err != nil {
+	if err := clipboardCopy(file); err != nil {
 		notify(err.Error(), true)
 	}
 
@@ -95,6 +110,53 @@ func UploadToHost(endpointURL string, fileContent *bytes.Buffer) (string, error)
 	}
 
 	return "", fmt.Errorf("server response error:%s", resp.Status)
+}
+
+// Recognize runs OCR on the given image via the tesseract CLI and returns the
+// recognized text. The OCR language can be overridden with the OCR_LANG env var.
+func Recognize(image *bytes.Buffer) (string, error) {
+	cmd := exec.Command("tesseract", ocrArgs(env("OCR_LANG"))...)
+	cmd.Stdin = image
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return "", fmt.Errorf("tesseract not found in PATH, install it to use --ocr")
+		}
+		if msg := strings.TrimSpace(stderr.String()); msg != "" {
+			return "", fmt.Errorf("tesseract: %s", msg)
+		}
+		return "", fmt.Errorf("tesseract: %w", err)
+	}
+
+	text := strings.TrimSpace(stdout.String())
+	if text == "" {
+		return "", fmt.Errorf("no text recognized")
+	}
+
+	return text, nil
+}
+
+// ocrArgs builds the tesseract CLI arguments, reading the image from stdin and
+// writing the recognized text to stdout, optionally for the given language.
+func ocrArgs(lang string) []string {
+	args := []string{"stdin", "stdout"}
+	if lang != "" {
+		args = append(args, "-l", lang)
+	}
+	return args
+}
+
+// clipboardCopy writes content to the Wayland clipboard via wl-copy. Content is
+// piped through stdin so text starting with '-' or spanning multiple lines is
+// copied verbatim.
+func clipboardCopy(content string) error {
+	cmd := exec.Command("wl-copy")
+	cmd.Stdin = strings.NewReader(content)
+	return cmd.Run()
 }
 
 func notify(msg string, exit bool) {
