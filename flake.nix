@@ -13,7 +13,7 @@
       flake-utils,
     }:
     let
-      version = "1.3.1";
+      version = "1.3.2";
       pname = "wl-uploader";
       supportedSystems = [
         "x86_64-linux"
@@ -23,11 +23,11 @@
       systemConfigs = {
         x86_64-linux = {
           arch = "linux_amd64";
-          hash = "sha256-fqO4SzjxzLG22RZYEBUOatexo5Oi8/CyYu0ScM4p1uI="; # x86_64-linux
+          hash = "sha256-OS+BPZNSsydfIBszHoUF/pXDylk86CGNVh03oxTpp8c="; # x86_64-linux
         };
         aarch64-linux = {
           arch = "linux_arm64";
-          hash = "sha256-QLe0zemmkVrcRCnHgdQ5nV6LLdYU4RO6u34s/rUSGC0="; # aarch64-linux
+          hash = "sha256-l/PmyD9/GhnjDD0HbGs5Dlix5iQ4lP8W/aZRic3eWqY="; # aarch64-linux
         };
       };
     in
