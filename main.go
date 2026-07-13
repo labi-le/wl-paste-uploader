@@ -5,6 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -14,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/image/draw"
 	"golang.org/x/net/proxy"
 )
 
@@ -115,9 +120,9 @@ func UploadToHost(endpointURL string, fileContent *bytes.Buffer) (string, error)
 
 // Recognize runs OCR on the given image via the tesseract CLI and returns the
 // recognized text. The OCR language can be overridden with the OCR_LANG env var.
-func Recognize(image *bytes.Buffer) (string, error) {
+func Recognize(clip *bytes.Buffer) (string, error) {
 	cmd := exec.Command("tesseract", ocrArgs(env("OCR_LANG"))...)
-	cmd.Stdin = image
+	cmd.Stdin = ocrInput(clip.Bytes())
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -139,6 +144,44 @@ func Recognize(image *bytes.Buffer) (string, error) {
 	}
 
 	return text, nil
+}
+
+// ocrMinDimension is the pixel size below which tesseract fails to recognize
+// text. Smaller rasters (e.g. small screenshots) are upscaled to around this
+// size first, which is what makes OCR work on them.
+const ocrMinDimension = 1000
+
+// ocrInput prepares clipboard bytes for tesseract: raster images whose largest
+// side is below ocrMinDimension are upscaled, everything else is passed through
+// untouched (including non-images, which tesseract may still decode itself).
+func ocrInput(raw []byte) io.Reader {
+	src, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return bytes.NewReader(raw)
+	}
+
+	bounds := src.Bounds()
+	maxDim := bounds.Dx()
+	if bounds.Dy() > maxDim {
+		maxDim = bounds.Dy()
+	}
+	if maxDim == 0 || maxDim >= ocrMinDimension {
+		return bytes.NewReader(raw)
+	}
+
+	scale := (ocrMinDimension + maxDim - 1) / maxDim
+	if scale > 8 {
+		scale = 8
+	}
+
+	dst := image.NewRGBA(image.Rect(0, 0, bounds.Dx()*scale, bounds.Dy()*scale))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), src, bounds, draw.Src, nil)
+
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, dst); err != nil {
+		return bytes.NewReader(raw)
+	}
+	return &buf
 }
 
 // ocrArgs builds the tesseract CLI arguments, reading the image from stdin and
