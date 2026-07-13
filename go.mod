@@ -2,4 +2,4 @@ module wl-paste-uploader
 
 go 1.25.0
 
-require golang.org/x/net v0.55.0
+require golang.org/x/net v0.57.0
