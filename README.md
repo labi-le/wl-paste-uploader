@@ -50,6 +50,7 @@ wl-paste share to a file host (0x0.st, catbox.moe, x0.at, envs.sh) and copy resu
         programs.wl-paste-uploader = {
           enable = true;
           ocr = true; # optional: pull in tesseract for `--ocr`
+          provider = "catbox"; # optional: default upload provider (UPLOADER_PROVIDER)
         };
       }
     ];

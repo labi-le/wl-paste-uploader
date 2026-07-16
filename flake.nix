@@ -91,13 +91,37 @@
               default = false;
               description = "Install tesseract to enable OCR (the --ocr flag)";
             };
+
+            provider = mkOption {
+              type = types.nullOr (types.enum [ "0x0" "x0" "envs" "catbox" ]);
+              default = null;
+              example = "catbox";
+              description = ''
+                Default upload provider. When set, the binary is wrapped to export
+                UPLOADER_PROVIDER so `wl-uploader` uses it; still overridable
+                per-invocation with --provider. Null keeps the built-in default (0x0).
+              '';
+            };
           };
 
           # wl-uploader is a one-shot command bound to a keybind, not a daemon,
           # so the module only wires up the binary and its runtime dependencies.
           config = lib.mkIf cfg.enable {
             environment.systemPackages = [
-              cfg.package
+              (
+                if cfg.provider == null then
+                  cfg.package
+                else
+                  pkgs.symlinkJoin {
+                    name = "${pname}-${version}-${cfg.provider}";
+                    paths = [ cfg.package ];
+                    nativeBuildInputs = [ pkgs.makeWrapper ];
+                    postBuild = ''
+                      wrapProgram $out/bin/${pname} \
+                        --set-default UPLOADER_PROVIDER ${cfg.provider}
+                    '';
+                  }
+              )
               pkgs.wl-clipboard # wl-paste / wl-copy
               pkgs.libnotify # notify-send
             ]
