@@ -110,12 +110,17 @@ func UploadToHost(endpointURL string, fileContent *bytes.Buffer) (string, error)
 	}
 	defer resp.Body.Close()
 
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	respBody := strings.TrimSpace(string(bodyBytes))
+
 	if resp.StatusCode == http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return strings.TrimSpace(string(bodyBytes)), nil
+		return respBody, nil
 	}
 
-	return "", fmt.Errorf("server response error:%s", resp.Status)
+	if respBody != "" {
+		return "", fmt.Errorf("server response error: %s\n%s", resp.Status, respBody)
+	}
+	return "", fmt.Errorf("server response error: %s", resp.Status)
 }
 
 // Recognize runs OCR on the given image via the tesseract CLI and returns the
