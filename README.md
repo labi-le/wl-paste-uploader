@@ -1,6 +1,6 @@
 # wl-paste-uploader
 
-wl-paste share to 0x0.st and copy result url to clipboard
+wl-paste share to a file host (0x0.st, catbox.moe, x0.at, envs.sh) and copy result url to clipboard
 
 ### Installation
 
@@ -76,6 +76,26 @@ socks_proxy=socks5://127.0.0.1:1088 wl-uploader
 ```
 
 you can also use env `HTTPS_PROXY`, `HTTP_PROXY`, `SOCKS_PROXY`, `ALL_PROXY`
+
+### Providers
+
+Choose where to upload with `--provider` (or the `UPLOADER_PROVIDER` env var;
+the flag takes precedence). Default: `0x0`.
+
+- `0x0` — [0x0.st](https://0x0.st), size-based retention
+- `x0` — [x0.at](https://x0.at), 3–100 days
+- `envs` — [envs.sh](https://envs.sh), size-based retention
+- `catbox` — [catbox.moe](https://catbox.moe), permanent (anonymous files removed after 2 years without access)
+
+```sh
+wl-uploader --provider catbox
+```
+
+example for sway
+
+```conf
+bindsym --to-code Mod4+p exec wl-uploader --provider catbox
+```
 
 ### OCR
 

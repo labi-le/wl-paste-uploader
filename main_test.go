@@ -122,7 +122,7 @@ func scalePNG(t *testing.T, path string, w, h int) []byte {
 	draw.CatmullRom.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Src, nil)
 
 	var buf bytes.Buffer
-	if err := png.Encode(&buf, dst); err != nil {
+	if err = png.Encode(&buf, dst); err != nil {
 		t.Fatalf("encode small png: %v", err)
 	}
 	return buf.Bytes()
