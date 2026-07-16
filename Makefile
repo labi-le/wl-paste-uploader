@@ -29,3 +29,6 @@ clean:
 
 tests:
 	go test -coverpkg=./... ./... -parallel=2
+
+lint:
+	golangci-lint run
