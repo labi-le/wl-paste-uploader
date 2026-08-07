@@ -13,7 +13,7 @@
       flake-utils,
     }:
     let
-      version = "1.3.2";
+      version = "1.4.0";
       pname = "wl-uploader";
       supportedSystems = [
         "x86_64-linux"
